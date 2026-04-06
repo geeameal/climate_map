@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Climate Smart Crop Suitability Map</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
+
+  <style>
+    body { margin:0; font-family: Arial; }
+
+    #map { height:100vh; }
+
+    .title {
+      position:absolute;
+      top:10px;
+      left:50%;
+      transform:translateX(-50%);
+      z-index:1000;
+      background:white;
+      padding:8px 15px;
+      font-weight:bold;
+      border-radius:6px;
+      box-shadow:0 0 5px rgba(0,0,0,0.3);
+    }
+
+    .panel {
+      position:absolute;
+      top:60px;
+      left:10px;
+      z-index:1000;
+      background:white;
+      padding:10px;
+      border-radius:6px;
+      box-shadow:0 0 5px rgba(0,0,0,0.3);
+    }
+
+    .info {
+      position:absolute;
+      top:60px;
+      right:10px;
+      z-index:1000;
+      width:260px;
+      background:white;
+      padding:10px;
+      border-radius:6px;
+      box-shadow:0 0 5px rgba(0,0,0,0.3);
+      white-space:pre-line;
+    }
+
+    .legend {
+      position:absolute;
+      bottom:10px;
+      left:10px;
+      z-index:1000;
+      background:white;
+      padding:10px;
+      border-radius:6px;
+      box-shadow:0 0 5px rgba(0,0,0,0.3);
+    }
+
+    .legend div {
+      display:flex;
+      align-items:center;
+      margin-bottom:4px;
+    }
+
+    .color-box {
+      width:20px;
+      height:20px;
+      margin-right:5px;
+    }
+
+    button {
+      width:180px;
+      margin:3px 0;
+    }
+  </style>
+</head>
+
+<body>
+
+<div class="title">
+  Climate-Smart Crop Suitability Map
+</div>
+
+<!-- LEFT PANEL -->
+<div class="panel">
+  <b>Select Crop</b><br><br>
+
+  <button onclick="switchLayer('robusta')">Coffee (Robusta)</button><br>
+  <button onclick="switchLayer('arabica')">Coffee (Arabica)</button><br>
+  <button onclick="switchLayer('cacao')">Cacao</button><br>
+  <button onclick="switchLayer('rubber')">Rubber</button><br>
+  <button onclick="switchLayer('abaca')">Abaca</button><br>
+  <button onclick="switchLayer('coconut')">Coconut</button>
+</div>
+
+<!-- RIGHT INFO PANEL -->
+<div class="info" id="infoPanel">
+  Loading...
+</div>
+
+<!-- LEGEND -->
+<div class="legend">
+  <b>Suitability</b>
+  <div><div class="color-box" style="background:red;"></div>Low</div>
+  <div><div class="color-box" style="background:orange;"></div>Low-Moderate</div>
+  <div><div class="color-box" style="background:yellow;"></div>Moderate</div>
+  <div><div class="color-box" style="background:green;"></div>High</div>
+</div>
+
+<div id="map"></div>
+
+<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+
+<script>
+
+// -------------------------------
+// MAP INIT
+// -------------------------------
+var map = L.map('map').setView([12, 122], 6);
+
+// Base map
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+
+// -------------------------------
+// GEE LAYERS
+// -------------------------------
+var layers = {
+
+  robusta: "https://earthengine.googleapis.com/v1/projects/miadp-rpco-xii/maps/c1bb36247f48b4cc4200117d0d9b7c38-f96e43fb8546b1e0bb7b49f9c8c3e596/tiles/{z}/{x}/{y}",
+
+  arabica: "https://earthengine.googleapis.com/v1/projects/miadp-rpco-xii/maps/040f942244a11436d0cfc947ce1c11a5-4e66ccc12307bf8225cfad62769a08e9/tiles/{z}/{x}/{y}",
+
+  cacao: "https://earthengine.googleapis.com/v1/projects/miadp-rpco-xii/maps/bf4a41e43211696853a3ff17a527e6b5-93ad1aea926a1508cffecc2ed9bf8cf1/tiles/{z}/{x}/{y}",
+
+  rubber: "https://earthengine.googleapis.com/v1/projects/miadp-rpco-xii/maps/e38ed307dc8e01d4c8e1fafa0940ebf8-f9a4e0941e8b318fadd7744ed72b23d9/tiles/{z}/{x}/{y}",
+
+  abaca: "https://earthengine.googleapis.com/v1/projects/miadp-rpco-xii/maps/88ddaa9481d5a3d8e0659da7b9379266-2dcbae53b18f2698c14a4522a5777e73/tiles/{z}/{x}/{y}",
+
+  coconut: "https://earthengine.googleapis.com/v1/projects/miadp-rpco-xii/maps/7d305348d44219346f535c20c4f67e6e-96dc4197d62dd2e12951847e04f37081/tiles/{z}/{x}/{y}"
+};
+
+// -------------------------------
+// CROP INFO (THIS FIXES YOUR ISSUE)
+// -------------------------------
+var cropInfo = {
+
+  robusta:
+`Coffee (Robusta)
+
+Elevation: 0–800 masl
+Temperature: 24–30°C
+Rainfall: 1500–2500 mm/year
+Slope: <25%
+Solar: Moderate`,
+
+  arabica:
+`Coffee (Arabica)
+
+Elevation: 800–1800 masl
+Temperature: 15–24°C
+Rainfall: 1500–2500 mm/year
+Slope: <25%
+Solar: Moderate`,
+
+  cacao:
+`Cacao
+
+Elevation: 0–600 masl
+Temperature: 21–32°C
+Rainfall: 1500–2500 mm/year
+Slope: <20%
+Solar: Low–Moderate (shade)`,
+
+  rubber:
+`Rubber
+
+Elevation: 0–600 masl
+Temperature: 25–35°C
+Rainfall: 2000–3000 mm/year
+Slope: <15%
+Solar: High`,
+
+  abaca:
+`Abaca
+
+Elevation: 0–1000 masl
+Temperature: 25–30°C
+Rainfall: 2000–3000 mm/year
+Slope: <20%
+Solar: Low–Moderate`,
+
+  coconut:
+`Coconut
+
+Elevation: 0–500 masl
+Temperature: 25–32°C
+Rainfall: 1500–2500 mm/year
+Slope: <20%
+Solar: High`
+};
+
+// -------------------------------
+// SWITCH FUNCTION
+// -------------------------------
+var currentLayer;
+
+function switchLayer(name){
+
+  if(currentLayer){
+    map.removeLayer(currentLayer);
+  }
+
+  currentLayer = L.tileLayer(layers[name]).addTo(map);
+
+  // UPDATE INFO PANEL
+  document.getElementById("infoPanel").innerText = cropInfo[name];
+}
+
+// DEFAULT
+switchLayer('robusta');
+
+</script>
+
+</body>
+</html>
